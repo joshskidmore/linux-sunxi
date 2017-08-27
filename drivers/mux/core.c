@@ -439,7 +439,7 @@ static struct mux_chip *of_find_mux_chip_by_node(struct device_node *np)
 }
 
 static struct mux_control *
-__mux_control_get(struct device *dev, const char *mux_name, bool optional)
+of_mux_control_get(struct device *dev, const char *mux_name, bool optional)
 {
 	struct device_node *np = dev->of_node;
 	struct of_phandle_args args;
@@ -498,6 +498,16 @@ __mux_control_get(struct device *dev, const char *mux_name, bool optional)
 	}
 
 	return &mux_chip->mux[controller];
+}
+
+static struct mux_control *
+__mux_control_get(struct device *dev, const char *mux_name, bool optional)
+{
+	/* look up via DT first */
+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+		return of_mux_control_get(dev, mux_name, optional);
+
+	return optional ? NULL : ERR_PTR(-ENODEV);
 }
 
 /**
