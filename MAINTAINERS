@@ -9205,6 +9205,11 @@ M:	Hans de Goede <hdegoede@redhat.com>
 S:	Maintained
 F:	drivers/mux/intel-cht-usb-mux.c
 
+MULTIPLEXER SUBSYSTEM PI3USB30532 DRIVER
+M:	Hans de Goede <hdegoede@redhat.com>
+S:	Maintained
+F:	drivers/mux/pi3usb30532.c
+
 MULTISOUND SOUND DRIVER
 M:	Andrew Veliath <andrewtv@usa.net>
 S:	Maintained
