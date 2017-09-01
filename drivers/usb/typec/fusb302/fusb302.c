@@ -1259,7 +1259,6 @@ static void init_tcpc_dev(struct tcpc_dev *fusb302_tcpc_dev)
 	fusb302_tcpc_dev->set_roles = tcpm_set_roles;
 	fusb302_tcpc_dev->start_drp_toggling = tcpm_start_drp_toggling;
 	fusb302_tcpc_dev->pd_transmit = tcpm_pd_transmit;
-	fusb302_tcpc_dev->mux = NULL;
 }
 
 static const char * const cc_polarity_name[] = {
@@ -1816,6 +1815,10 @@ static int fusb302_probe(struct i2c_client *client,
 		if (!chip->extcon)
 			return -EPROBE_DEFER;
 	}
+
+	chip->tcpc_dev.mux = devm_tcpc_gen_mux_create(dev);
+	if (IS_ERR(chip->tcpc_dev.mux))
+		return PTR_ERR(chip->tcpc_dev.mux);
 
 	cfg.drv_data = chip;
 	chip->psy = devm_power_supply_register(dev, &fusb302_psy_desc, &cfg);
