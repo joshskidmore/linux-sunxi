@@ -1,4 +1,7 @@
 obj-$(CONFIG_FB_CMDLINE)          += fb_cmdline.o
+ifeq ($(CONFIG_DMI),y)
+obj-$(CONFIG_FB_CMDLINE)          += fb_dmi_quirks.o
+endif
 obj-$(CONFIG_FB_NOTIFY)           += fb_notify.o
 obj-$(CONFIG_FB)                  += fb.o
 fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
@@ -13,9 +16,6 @@ endif
 ifeq ($(CONFIG_FRAMEBUFFER_CONSOLE_ROTATION),y)
 fb-y				  += fbcon_rotate.o fbcon_cw.o fbcon_ud.o \
 				     fbcon_ccw.o
-endif
-ifeq ($(CONFIG_DMI),y)
-fb-y				  += fbcon_dmi_quirks.o
 endif
 endif
 fb-objs                           := $(fb-y)

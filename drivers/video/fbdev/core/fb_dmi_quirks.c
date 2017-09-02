@@ -1,5 +1,5 @@
 /*
- *  fbcon_dmi_quirks.c -- DMI based quirk detection for fbcon
+ *  fb_dmi_quirks.c -- DMI based LCD panel rotation quirk detection
  *
  *	Copyright (C) 2017 Hans de Goede <hdegoede@redhat.com>
  *
@@ -11,7 +11,6 @@
 #include <linux/dmi.h>
 #include <linux/fb.h>
 #include <linux/kernel.h>
-#include "fbcon.h"
 
 /*
  * Some x86 clamshell design devices use portrait tablet screens and a display
@@ -112,7 +111,11 @@ static const struct dmi_system_id rotate_data[] = {
 	{}
 };
 
-int fbcon_platform_get_rotate(struct fb_info *info)
+/*
+ * Note this function returns the rotation necessary to put the display
+ * the right way up, or -1 if there is no quirk.
+ */
+int fb_get_panel_rotate_quirk(int width, int height)
 {
 	const struct dmi_system_id *match;
 	const struct fbcon_dmi_rotate_data *data;
@@ -124,8 +127,7 @@ int fbcon_platform_get_rotate(struct fb_info *info)
 	     match = dmi_first_match(match + 1)) {
 		data = match->driver_data;
 
-		if (data->width != info->var.xres ||
-		    data->height != info->var.yres)
+		if (data->width != width || data->height != height)
 			continue;
 
 		if (!data->bios_dates)
@@ -141,5 +143,6 @@ int fbcon_platform_get_rotate(struct fb_info *info)
 		}
 	}
 
-	return FB_ROTATE_UR;
+	return -1;
 }
+EXPORT_SYMBOL_GPL(fb_get_panel_rotate_quirk);
