@@ -155,6 +155,9 @@ int mux_chip_register(struct mux_chip *mux_chip)
 	for (i = 0; i < mux_chip->controllers; ++i) {
 		struct mux_control *mux = &mux_chip->mux[i];
 
+		if (mux->init_as_is)
+			continue;
+
 		if (mux->idle_state == mux->cached_state)
 			continue;
 
