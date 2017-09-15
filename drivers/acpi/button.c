@@ -145,6 +145,9 @@ static int acpi_lid_notify_state(struct acpi_device *device, int state)
 	ktime_t next_report;
 	bool do_update;
 
+	if (!state)
+		pr_err("ACPI LID closed\n");
+
 	/*
 	 * In lid_init_state=ignore mode, if user opens/closes lid
 	 * frequently with "open" missing, and "last_time" is also updated
