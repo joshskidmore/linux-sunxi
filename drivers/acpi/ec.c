@@ -1595,9 +1595,16 @@ static int acpi_ec_add(struct acpi_device *device)
 {
 	struct acpi_ec *ec = NULL;
 	int ret;
+	bool is_ecdt = false;
 
 	strcpy(acpi_device_name(device), ACPI_EC_DEVICE_NAME);
 	strcpy(acpi_device_class(device), ACPI_EC_CLASS);
+
+	if (!strcmp(acpi_device_hid(device), ACPI_ECDT_HID)) {
+		is_ecdt = true;
+		ec = boot_ec;
+		goto end;
+	}
 
 	ec = acpi_ec_alloc();
 	if (!ec)
@@ -1626,6 +1633,7 @@ static int acpi_ec_add(struct acpi_device *device)
 	if (ret)
 		goto err_query;
 
+end:
 	device->driver_data = ec;
 
 	ret = !!request_region(ec->data_addr, 1, "EC data");
@@ -1633,8 +1641,10 @@ static int acpi_ec_add(struct acpi_device *device)
 	ret = !!request_region(ec->command_addr, 1, "EC cmd");
 	WARN(!ret, "Could not request EC cmd io port 0x%lx", ec->command_addr);
 
-	/* Reprobe devices depending on the EC */
-	acpi_walk_dep_device_list(ec->handle);
+	if (!is_ecdt) {
+		/* Reprobe devices depending on the EC */
+		acpi_walk_dep_device_list(ec->handle);
+	}
 	acpi_handle_debug(ec->handle, "enumerated.\n");
 	return 0;
 
@@ -1690,6 +1700,7 @@ ec_parse_io_ports(struct acpi_resource *resource, void *context)
 
 static const struct acpi_device_id ec_device_ids[] = {
 	{"PNP0C09", 0},
+	{ACPI_ECDT_HID, 0},
 	{"", 0},
 };
 
@@ -1748,6 +1759,7 @@ error:
 static int __init acpi_ec_ecdt_start(void)
 {
 	acpi_handle handle;
+	int ret;
 
 	if (!boot_ec)
 		return -ENODEV;
@@ -1766,7 +1778,12 @@ static int __init acpi_ec_ecdt_start(void)
 		handle = boot_ec->handle;
 	else if (!acpi_ec_ecdt_get_handle(&handle))
 		return -ENODEV;
-	return acpi_config_boot_ec(boot_ec, handle, true, true);
+	ret = acpi_config_boot_ec(boot_ec, handle, true, true);
+	if (ret)
+		return ret;
+
+	/* Register to ACPI bus with PM ops attached */
+	return acpi_bus_register_early_device(ACPI_BUS_TYPE_ECDT_EC);
 }
 
 #if 0
