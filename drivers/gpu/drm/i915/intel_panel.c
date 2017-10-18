@@ -1845,6 +1845,22 @@ void intel_panel_destroy_backlight(struct drm_connector *connector)
 	panel->backlight.present = false;
 }
 
+void intel_panel_set_orientation(struct intel_panel *panel, int orientation)
+{
+	struct intel_connector *panel_conn;
+	int width = 0, height = 0;
+
+	if (panel->fixed_mode) {
+		width = panel->fixed_mode->hdisplay;
+		height = panel->fixed_mode->vdisplay;
+	}
+
+	panel_conn = container_of(panel, struct intel_connector, panel);
+	panel_conn->base.display_info.panel_orientation = orientation;
+	drm_connector_init_panel_orientation_property(&panel_conn->base,
+						      width, height);
+}
+
 /* Set up chip specific backlight functions */
 static void
 intel_panel_init_backlight_funcs(struct intel_panel *panel)

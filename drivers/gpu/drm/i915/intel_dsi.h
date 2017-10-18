@@ -52,6 +52,8 @@ struct intel_dsi {
 	/* if true, use HS mode, otherwise LP */
 	bool hs;
 
+	bool got_panel_orientation;
+
 	/* virtual channel */
 	int channel;
 
