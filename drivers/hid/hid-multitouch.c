@@ -73,6 +73,7 @@ MODULE_LICENSE("GPL");
 #define MT_QUIRK_TOUCH_SIZE_SCALING	BIT(15)
 #define MT_QUIRK_STICKY_FINGERS		BIT(16)
 #define MT_QUIRK_ASUS_CUSTOM_UP		BIT(17)
+#define MT_QUIRK_BUTTON_IN_SLOT0_ONLY	BIT(18)
 
 #define MT_INPUTMODE_TOUCHSCREEN	0x02
 #define MT_INPUTMODE_TOUCHPAD		0x03
@@ -135,6 +136,7 @@ struct mt_device {
 	bool is_buttonpad;	/* is this device a button pad? */
 	bool serial_maybe;	/* need to check for serial protocol */
 	bool curvalid;		/* is the current contact valid? */
+	int curslot;		/* current linux mt slot */
 	unsigned mt_flags;	/* flags to pass to input-mt */
 };
 
@@ -173,6 +175,7 @@ static void mt_post_parse(struct mt_device *td);
 #define MT_CLS_ASUS				0x010b
 #define MT_CLS_VTL				0x0110
 #define MT_CLS_GOOGLE				0x0111
+#define MT_CLS_NOVATEK				0x0112
 
 #define MT_DEFAULT_MAXCONTACT	10
 #define MT_MAX_MAXCONTACT	250
@@ -306,6 +309,14 @@ static struct mt_class mt_classes[] = {
 			MT_QUIRK_CONTACT_CNT_ACCURATE |
 			MT_QUIRK_SLOT_IS_CONTACTID |
 			MT_QUIRK_HOVERING
+	},
+	{ .name = MT_CLS_NOVATEK,
+		.quirks = MT_QUIRK_ALWAYS_VALID |
+			MT_QUIRK_IGNORE_DUPLICATES |
+			MT_QUIRK_HOVERING |
+			MT_QUIRK_CONTACT_CNT_ACCURATE |
+			MT_QUIRK_STICKY_FINGERS |
+			MT_QUIRK_BUTTON_IN_SLOT0_ONLY
 	},
 	{ }
 };
@@ -676,6 +687,7 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
 		active = (s->touch_state || s->inrange_state) &&
 							s->confidence_state;
 
+		td->curslot = slotnum;
 		input_mt_slot(input, slotnum);
 		input_mt_report_slot_state(input, MT_TOOL_FINGER, active);
 		if (active) {
@@ -794,6 +806,13 @@ static void mt_process_mt_event(struct hid_device *hid, struct hid_field *field,
 			break;
 
 		default:
+			if ((quirks & MT_QUIRK_BUTTON_IN_SLOT0_ONLY) &&
+			    td->curslot != 0 &&
+			    usage->type == EV_KEY &&
+			    usage->code >= BTN_MOUSE &&
+			    usage->code < BTN_JOYSTICK)
+				return;
+
 			if (usage->type)
 				input_event(input, usage->type, usage->code,
 						value);
@@ -1604,6 +1623,12 @@ static const struct hid_device_id mt_devices[] = {
 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
 		MT_USB_DEVICE(USB_VENDOR_ID_TURBOX,
 			USB_DEVICE_ID_TURBOX_TOUCHSCREEN_MOSART) },
+
+	/* Novatek multi-touch touchpad / keyboard combo */
+	{ .driver_data = MT_CLS_NOVATEK,
+		HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH_WIN_8,
+			USB_VENDOR_ID_NOVATEK,
+			USB_DEVICE_ID_NOVATEK_MT_TP) },
 
 	/* Novatek Panel */
 	{ .driver_data = MT_CLS_NSMU,
